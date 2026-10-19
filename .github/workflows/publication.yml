@@ -1,0 +1,28 @@
+name: Preparer la mise a jour signee
+on:
+  push:
+    branches: [main]
+    paths: [release-request.json]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: bikes-kickr-release
+  cancel-in-progress: false
+jobs:
+  publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Recuperer exactement la revision demandee
+        run: |
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth 1 origin "${GITHUB_SHA}"
+          git -c advice.detachedHead=false checkout --detach FETCH_HEAD
+      - name: Verifier les deux paquets publics
+        run: python3 verifier_publication.py
+      - name: Preparer la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 publier_release.py
